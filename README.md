@@ -149,4 +149,6 @@ Used to simulate three independent hospitals participating in federated learning
 
 Pull requests are welcome. If you are planning something substantial, open an issue first so we can discuss the direction before you write the code.
 
-*Hospitals should not have to choose between protecting their patients and improving their diagnostic tools. This is one attempt at making both possible simultaneously.*
+$${\color{blue}\text{Hospitals should not have to choose between protecting their patients and improving their diagnostic tools. This is one attempt at making both possible simultaneously.}}$$
+
+---
