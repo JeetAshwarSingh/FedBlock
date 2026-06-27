@@ -1,19 +1,30 @@
-FedBlock -> Federated Learning with Blockchain Auditability
+# FedBlock – Federated Learning with Blockchain Auditability
 
-A privacy preserving system for collaborative medical AI, built across three hospital nodes using Federated Averaging and a custom blockchain for audit logging.
+A privacy-preserving system for collaborative medical AI built across three hospital nodes using **Federated Averaging (FedAvg)** and a **custom blockchain** for immutable audit logging.
 
+---
 
-What this project does
+## What This Project Does
 
-Hospitals sit on some of the most valuable data in the world for training diagnostic AI — and almost none of it can be shared. Privacy laws, patient ethics, institutional liability: the barriers are real and legitimate. The result is that most healthcare AI is trained on whatever one institution happens to have, which is rarely enough.
+Hospitals possess some of the world's most valuable data for training diagnostic AI models, yet privacy regulations, ethical concerns, and institutional policies prevent them from sharing patient records. As a result, many healthcare AI models are trained on data from a single institution, limiting their generalizability.
 
-FedBlock takes a different approach. Instead of pooling data, it pools learning. Each hospital trains a local model on its own private patient records. Only the model weights not the underlying data are sent to a central server, which aggregates them using Federated Averaging and records every round immutably on a blockchain. The raw data never moves. The model improves as if it had seen everything.
+**FedBlock** addresses this challenge through **Federated Learning**.
 
-This was built and tested on the Wisconsin Breast Cancer Dataset across three simulated hospital nodes, and the accuracy came out competitive with a centrally trained baseline which is the whole point.
+Instead of sharing patient data, each hospital trains a model locally on its own private dataset. Only the trained model weights—not the underlying patient records—are transmitted to a central server. The server aggregates these weights using the **Federated Averaging (FedAvg)** algorithm and records every aggregation round on a blockchain, creating a tamper-evident audit trail.
 
+Throughout the entire process:
 
-Architecture
+* Patient data never leaves the hospital.
+* Only model parameters are exchanged.
+* Every federated learning round is permanently recorded on-chain.
 
+This project was evaluated using the **Wisconsin Breast Cancer Dataset**, partitioned across three simulated hospital nodes. The federated model achieved performance comparable to a centrally trained model while preserving data privacy.
+
+---
+
+## System Architecture
+
+```text
 +------------------+    +------------------+    +------------------+
 |   Hospital 1     |    |   Hospital 2     |    |   Hospital 3     |
 | (hospital_1.py)  |    | (hospital_2.py)  |    | (hospital_3.py)  |
@@ -22,60 +33,114 @@ Architecture
 |  on private data |    |  on private data |    |  on private data |
 +--------+---------+    +--------+---------+    +--------+---------+
          |                       |                        |
-         |     model weights only — no raw data           |
+         |     Model weights only (no raw patient data)  |
          +-----------------------+------------------------+
                                  |
                                  v
-                   +---------------------------+
-                   |     Blockchain Server     |
-                   |   (blockchain_update.py)  |
-                   |                           |
-                   |  1. Collect weight        |
-                   |     updates from nodes    |
-                   |  2. Run FedAvg            |
-                   |  3. Record round on       |
-                   |     the blockchain        |
-                   |  4. Send global model     |
-                   |     back to all nodes     |
-                   +---------------------------+
+                  +-----------------------------+
+                  |     Blockchain Server       |
+                  | (blockchain_update.py)      |
+                  |                             |
+                  | • Collect local weights     |
+                  | • Run FedAvg aggregation    |
+                  | • Log round on blockchain   |
+                  | • Broadcast global model    |
+                  +-----------------------------+
+```
 
-Each round works the same way: local training happens in parallel across nodes, weights are sent to the server, FedAvg produces a new global model, and that round is permanently logged on-chain before the updated model is broadcast back.
+Each training round follows the same workflow:
 
-Project structure
+1. Every hospital trains its model locally.
+2. Model weights are sent to the central server.
+3. The server performs **Federated Averaging**.
+4. The aggregation round is recorded on the blockchain.
+5. The updated global model is distributed back to all participating hospitals.
 
-fedBlock/
-| 
-+-- juypter notebook           # doesnt play any role in blockchain was used while building the blockchain used for rapid testing and validation
-+-- data_preprocessing.py      # dividing the dataset into three distinct dataset so different hospital can train on it
-+-- operations.py              # has all the necessary classes required for the functioning of the blockchain
-+-- hospital_1.py              # Node 1 — local training and weight transmission
-+-- hospital_2.py              # Node 2 — local training and weight transmission
-+-- hospital_3.py              # Node 3 — local sraining and weight transmission
-|
-+-- blockchain_update.py       # Central server — FedAvg aggregation and blockchain logging
-|
+---
 
-How it works
-Local training
+## Project Structure
 
-Each hospital script loads its partition of the dataset, trains a classifier independently, and sends only the resulting model weights to the server. The data itself goes nowhere.
+```text
+FedBlock/
+│
+├── jupyter_notebook.ipynb       # Used during blockchain development for testing and validation
+├── data_preprocessing.py        # Splits the dataset into three hospital partitions
+├── operations.py                # Blockchain classes and utility functions
+├── hospital_1.py                # Hospital Node 1
+├── hospital_2.py                # Hospital Node 2
+├── hospital_3.py                # Hospital Node 3
+│
+└── blockchain_update.py         # Central server: FedAvg aggregation + blockchain logging
+```
 
-Federated Averaging
-The server receives weights from all three nodes and computes a weighted average proportional to each node's dataset size:
-This produces a global model that reflects the collective learning of all three hospitals without any of them seeing each other's data.
+---
 
-Blockchain logging
-After each aggregation round, a new block is appended to the chain. It contains the round number, timestamp, a hash of the aggregated weights, the IDs of all contributing nodes, and the hash of the previous block. This makes the contribution history tamper-evident — you can verify exactly who contributed what and when, and any retroactive modification breaks the chain.
-The federated model performs on par with a centrally trained model, demonstrating that the privacy-preserving setup does not require sacrificing much in the way of predictive quality.
+## How It Works
 
-Privacy and compliance
-The system was designed with HIPAA, GDPR, and India's DPDP Act in mind. The short version: no patient data ever leaves a hospital node. Only model weights travel over the network, and every interaction between nodes is logged permanently on the blockchain. There is no point in the pipeline where a single entity has access to all the raw data.
+### 1. Local Training
 
+Each hospital loads its assigned dataset partition, trains a local machine learning model independently, and transmits **only the learned model weights** to the central server.
 
-Tech stack
-Python
-scikit-learn / NumPy
-Custom blockchain (built from scratch)
+No patient data is shared.
 
-dataset used for simulation
-Wisconsin Breast Cancer Dataset (UCI)
+---
+
+### 2. Federated Averaging (FedAvg)
+
+The server receives model weights from all participating hospitals and computes a weighted average based on the size of each local dataset.
+
+The resulting global model benefits from knowledge learned across all hospitals while ensuring that no institution ever accesses another's private data.
+
+---
+
+### 3. Blockchain Logging
+
+After every aggregation round, a new block is appended to the blockchain containing:
+
+* Round number
+* Timestamp
+* Hash of the aggregated model weights
+* IDs of participating hospital nodes
+* Previous block hash
+
+This creates a tamper-evident audit trail. Any attempt to modify historical records invalidates the blockchain, making every contribution verifiable.
+
+---
+
+## Privacy and Compliance
+
+The system is designed around privacy-by-design principles and aligns with the goals of regulations such as:
+
+* HIPAA
+* GDPR
+* India's DPDP Act
+
+Key privacy guarantees include:
+
+* Patient data never leaves a hospital.
+* Only model parameters are transmitted.
+* Every communication between participants is immutably logged.
+* No central authority ever has access to all raw patient data.
+
+---
+
+## Results
+
+The federated model achieved performance comparable to a centrally trained model, demonstrating that strong privacy guarantees can be maintained without significantly compromising predictive accuracy.
+
+---
+
+## Tech Stack
+
+* Python
+* scikit-learn
+* NumPy
+* Custom blockchain implementation
+
+---
+
+## Dataset
+
+**Wisconsin Breast Cancer Dataset (UCI Repository)**
+
+Used to simulate three independent hospitals participating in federated learning.
